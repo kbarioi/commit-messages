@@ -1,0 +1,26 @@
+{
+  "name": "example-with-tailwindcss",
+  "type": "module",
+  "scripts": {
+    "dev": "vinxi dev",
+    "build": "vinxi build",
+    "start": "vinxi start"
+  },
+  "dependencies": {
+    "@kobalte/core": "^0.13.6",
+    "@solid-primitives/scheduled": "^1.4.3",
+    "@solid-primitives/storage": "^4.2.1",
+    "@solidjs/meta": "^0.29.4",
+    "@solidjs/router": "^0.14.1",
+    "@solidjs/start": "^1.0.6",
+    "autoprefixer": "^10.4.19",
+    "monaco-editor": "^0.52.0",
+    "postcss": "^8.4.38",
+    "solid-js": "^1.8.18",
+    "tailwindcss": "^3.4.3",
+    "vinxi": "^0.4.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
