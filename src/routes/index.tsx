@@ -1,18 +1,10 @@
 import { Accordion } from "@kobalte/core/accordion";
+import { Button } from "@kobalte/core/button";
 import { Checkbox } from "@kobalte/core/checkbox";
 import { Tabs } from "@kobalte/core/tabs";
 import { TextField } from "@kobalte/core/text-field";
-import { throttle } from "@solid-primitives/scheduled";
 import { Title } from "@solidjs/meta";
-import { cache, createAsync } from "@solidjs/router";
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
-// import {
-//   KeyCode,
-//   KeyMod,
-//   languages,
-//   editor as mEditor,
-//   Uri,
-// } from "monaco-editor";
+import { clientOnly } from "@solidjs/start";
 import {
   createEffect,
   createMemo,
@@ -20,25 +12,12 @@ import {
   createSignal,
   For,
   Index,
-  Match,
-  onCleanup,
-  onMount,
   ParentComponent,
   Resource,
-  Signal,
-  splitProps,
   Suspense,
-  Switch,
   type Component,
 } from "solid-js";
-import { createStore, reconcile, unwrap } from "solid-js/store";
 import { getCookie, setCookie } from "vinxi/http";
-import { useZoom } from "~/hooks/useZoom";
-import { clientOnly } from "@solidjs/start";
-import { NumberField } from "@kobalte/core/number-field";
-import { Button } from "@kobalte/core/button";
-// import { useZoom } from "../../hooks/useZoom";
-// import { liftOff } from "./setupSolid";
 
 const Editor = clientOnly(() => import("../components/Editor"));
 
@@ -92,22 +71,6 @@ const fetchActiveSprint = async (
   return response.ok ? response.json() : response.text();
 };
 
-// const getUsers = cache(
-//   async (
-//     ticketNumber: string | undefined,
-//     username: string | undefined,
-//     apiKey: string | undefined
-//   ) => {
-//     return fetchTicket(ticketNumber, username, apiKey);
-//   },
-//   "users"
-// );
-
-// export const route = {
-//   load: (ticketNumber: string, username: string, apiKey: string) =>
-//     getUsers(ticketNumber, username, apiKey),
-// };
-
 const setV = (name: string, value: string) => {
   "use server";
   setCookie(name, value, { httpOnly: true });
@@ -139,20 +102,6 @@ const App: Component = () => {
 
   const [userConfig, setUserConfig] = createCookie<UserConfig>("cm-config");
 
-  // const [title, setTitle] = createSignal(""); //createCookie<string>("cm-title");
-  // const [epic, setEpic] = createSignal(""); //createCookie<string>("cm-epic");
-  // const [bodyS, setBody] = createSignal(""); //createCookie<string>("cm-body");
-  // const [arst, setarst] = createSignal(""); //createCookie<string>("cm-arst");
-  // const [shouldUseCommitMessages, setShouldUseCommitMessages] =
-  //   createSignal(true);
-
-  // const user = createAsync(() =>
-  //   getUsers(
-  //     config()?.ticketNumber.toString(),
-  //     globalS()?.username,
-  //     globalS()?.apiKey
-  //   )
-  // );
   const [ticket] = createResource(
     async () =>
       await fetchTicket(
@@ -161,7 +110,7 @@ const App: Component = () => {
         globalS()?.apiKey
       )
   );
-  createEffect(() => console.log(ticket()));
+  createEffect(() => console.log({ ticket: ticket() }));
 
   const [sprint] = createResource(async () => {
     const a = await fetchActiveSprint(
@@ -172,151 +121,33 @@ const App: Component = () => {
     const v = a.values[0].name.split(" ").pop();
     return v.split("-")[1];
   });
+  createEffect(() => console.log({ sprint: sprint() }));
 
   const config = createMemo<Config>(() => ({
     ...userConfig()!,
-    sprint: sprint(),
     epic: ticket()?.issues[0].fields.parent.fields.summary,
+    sprint: sprint(),
+    ticketSummary: ticket()?.issues?.[0].fields.summary,
     workItem: ticket()?.issues?.[0].fields.customfield_13129,
   }));
 
   const [blocks, setBlocks] = createCookie<Block[]>("cm-blocks");
-  // setBlocks({
-  //   blocks: [
-  //     {
-  //       title: "Block 1",
-  //       code: '[`git checkout main && git pull`, `git checkout -b kb-CLOUDHUB-${globals?.apiKey}`,  `git push`].join("\\n")',
-  //     },
-  //   ],
-  // });
-  // const [sprint, setSprint] = createSignal(0);
 
-  // const workItemNumber = createMemo(
-  //   () => user()?.issues?.[0].fields.customfield_13129
-  // );
-  // const cloudhubTicket = createMemo(() => user()?.issues?.[0].key);
-  // const ticketSummary = createMemo(() => user()?.issues?.[0].fields.summary);
-  // const ticketLink = createMemo(
-  //   () =>
-  //     `[${cloudhubTicket()}](https://imdexdev.atlassian.net/browse/${cloudhubTicket()})`
-  // );
-
-  // const footer = createMemo(() => `#${workItemNumber()} ${ticketLink()}`);
-
-  // const titleM = createMemo(
-  //   () =>
-  //     `${title()
-  //       ?.replace("arst", cloudhubTicket())
-  //       ?.replace("asdf", cloudhubTicket())}`
-  // );
-  // const epicM = createMemo(() => (epic() ? `[${epic()}]` : ""));
-
-  // const desc = createMemo(() => {
-  //   const title = `"${ticketLink()} ${ticketSummary()}"`;
-  //   const body = shouldUseCommitMessages()
-  //     ? [
-  //         `$(git log --cherry kb-CLOUDHUB-${ticketNumber()} ^main --pretty="%s" | ForEach-Object { "- $_" })`,
-  //       ]
-  //     : bodyS()
-  //         ?.split("\n")
-  //         .map((x) => x.trim())
-  //         .filter(Boolean)
-  //         .map((x) => `"- ${x}"`) || [];
-  //   const footer = [" ", " ", `#${workItemNumber()}`].map((x) => `"${x}"`);
-
-  //   return [title].concat(body, footer).join(" ");
-  // });
-
-  // [
-  //   `git checkout main && git pull`,
-  //   `git checkout -b kb-CLOUDHUB-${apiKey()}`,
-  //   `git push`,
-  // ].join("\n")
-
-  // const createNewMainBranch = createMemo(() => {
-  //   try {
-  //     return eval(arst()!);
-  //   } catch (e) {
-  //     return e.message;
-  //   }
-  // });
-  // const createNewSprintBranch = createMemo(() =>
-  //   [
-  //     `git checkout main && git pull`,
-  //     `git checkout feat/r2024-${sprint()} && git pull`,
-  //     `git checkout -b sprint/kb-CLOUDHUB-${ticketNumber()}`,
-  //     `git cherry-pick kb-CLOUDHUB-${ticketNumber()} ^main`,
-  //     `git push`,
-  //   ].join("\n")
-  // );
-
-  // const commitMessage = createMemo(() =>
-  //   [`${titleM()}`, `${bodyS()}\n`, footer()]
-  //     .filter((x) => x.trim())
-  //     .join("\n\n")
-  // );
-
-  // const mainCommand = createMemo(() => {
-  //   const commands = [
-  //     "az repos pr create",
-  //     "--draft",
-  //     `--work-items "${workItemNumber()}"`,
-  //     '--output "table"',
-  //     "--open", // open the browser
-  //     `--source-branch "kb-${cloudhubTicket()}"`,
-  //     '--target-branch "main"',
-  //     `--title "main ${epicM()} ${titleM()}"`,
-  //     `--description ${desc()}`,
-  //   ];
-  //   return commands.join(" ");
-  // });
-  // const sprintCommand = createMemo(() => {
-  //   const commands = [
-  //     "az repos pr create",
-  //     `--work-items "${workItemNumber()}"`,
-  //     '--output "table"',
-  //     "--open", // open the browser
-  //     `--source-branch "sprint/kb-${cloudhubTicket()}"`,
-  //     `--target-branch "feat/r2024-${sprint()}"`,
-  //     `--title "sprint ${epicM()} ${titleM()}"`,
-  //     `--description ${desc()}`,
-  //   ];
-  //   return commands.join(" ");
-  // });
-
-  // const config = createMemo(() => [
-  //   {
-  //     content: createNewMainBranch(),
-  //     label: "Create Main Branch",
-  //     shouldRespectNewLines: true,
-  //   },
-  //   {
-  //     content: commitMessage(),
-  //     label: "Commit Message",
-  //     shouldRespectNewLines: true,
-  //   },
-  //   {
-  //     content: mainCommand(),
-  //     label: "Main PR Command",
-  //     shouldRespectNewLines: false,
-  //   },
-  //   {
-  //     content: createNewSprintBranch(),
-  //     label: "Create Sprint Branch",
-  //     shouldRespectNewLines: true,
-  //   },
-  //   {
-  //     content: sprintCommand(),
-  //     label: "Sprint PR Command",
-  //     shouldRespectNewLines: false,
-  //   },
-  // ]);
   const userConfigArray = createMemo(() => Object.entries(userConfig()!));
   const [addBlock, setAddBlock] = createSignal("");
 
   return (
     <>
       <Title>Commit Messages</Title>
+      <Button
+        onClick={() => {
+          if (!blocks()) return;
+          console.log("saving...");
+          setBlocks(blocks()!);
+        }}
+      >
+        Save
+      </Button>
       <header>commit messages</header>
       <div class="flex gap-2 flex-col">
         <h1>Globals</h1>
@@ -401,46 +232,6 @@ return {
         >
           Add Block
         </Button>
-
-        {/* <TextField
-          value={ticketNumber()}
-          onChange={setTicketNumber}
-          class="text-field"
-        >
-          <TextField.Label class="text-field__label">
-            Ticket Number
-          </TextField.Label>
-          <TextField.Input class="text-field__input" />
-        </TextField>
-
-        <TextField value={title()} onChange={setTitle} class="text-field">
-          <TextField.Label class="text-field__label">Title</TextField.Label>
-          <TextField.Input class="text-field__input" />
-        </TextField>
-
-        <TextField value={epic()} onChange={setEpic} class="text-field">
-          <TextField.Label class="text-field__label">Epic</TextField.Label>
-          <TextField.Input class="text-field__input" />
-        </TextField>
-
-        <TextField value={bodyS()} onChange={setBody} class="text-field">
-          <TextField.Label class="text-field__label">body</TextField.Label>
-          <TextField.TextArea class="text-field__input" />
-        </TextField>
-
-        <Checkbox
-          checked={shouldUseCommitMessages()}
-          onChange={setShouldUseCommitMessages}
-          class="checkbox"
-        >
-          <Checkbox.Input class="checkbox__input" />
-          <Checkbox.Control class="checkbox__control">
-            <Checkbox.Indicator>x</Checkbox.Indicator>
-          </Checkbox.Control>
-          <Checkbox.Label class="checkbox__label">
-            Should use commit messages (instead use body from above)
-          </Checkbox.Label>
-        </Checkbox> */}
       </div>
       <Suspense>
         <div class="flex flex-col gap-4 p-8">
@@ -473,26 +264,6 @@ return {
           </Index>
         </div>
       </Suspense>
-      {/* <Suspense>
-        <Switch>
-          <Match when={!!user()?.issues?.length}>
-            <div class="flex flex-col gap-4 p-8">
-              <For each={config()}>
-                {(c) => (
-                  <div class="p-4 bg-slate-200 border border-solid border-slate-800 rounded">
-                    <h4>{c.label}</h4>
-                    {c.shouldRespectNewLines ? (
-                      <pre>{c.content}</pre>
-                    ) : (
-                      <code>{c.content}</code>
-                    )}
-                  </div>
-                )}
-              </For>
-            </div>
-          </Match>
-        </Switch>
-      </Suspense> */}
     </>
   );
 };
