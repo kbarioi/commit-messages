@@ -294,17 +294,21 @@ const Block: ParentComponent<{
                       {check[0]}
                     </Checkbox.Label>
                   </Checkbox>
-                  <Button
-                    class="rounded-full flex items-center justify-center bg-red-500 w-4 h-4"
-                    onClick={() => {
-                      //remove this item from list
-                      if (!window.confirm("Do you really want to delete this?"))
-                        return;
-                      props.removeCheck(check[0]);
-                    }}
-                  >
-                    -
-                  </Button>
+                  <Show when={!["show preview", "wrap"].includes(check[0])}>
+                    <Button
+                      class="rounded-full flex items-center justify-center bg-red-500 w-4 h-4"
+                      onClick={() => {
+                        //remove this item from list
+                        if (
+                          !window.confirm("Do you really want to delete this?")
+                        )
+                          return;
+                        props.removeCheck(check[0]);
+                      }}
+                    >
+                      -
+                    </Button>
+                  </Show>
                 </div>
               );
             }}
@@ -319,26 +323,35 @@ const Block: ParentComponent<{
       </div>
       <Tabs aria-label="Main navigation" class="tabs">
         <Tabs.List class="tabs__list">
-          <Tabs.Trigger class="tabs__trigger" value="preview">
-            Preview
+          <Tabs.Trigger class="tabs__trigger" value="actual">
+            Actual
           </Tabs.Trigger>
           <Tabs.Trigger class="tabs__trigger" value="code">
             Code
           </Tabs.Trigger>
+          <Show when={props.block.checks["show preview"]}>
+            <Tabs.Trigger class="tabs__trigger" value="preview">
+              Preview
+            </Tabs.Trigger>
+          </Show>
           <Tabs.Indicator class="tabs__indicator" />
         </Tabs.List>
-        <Tabs.Content class="tabs__content" value="preview">
-          {props.block.checks.wrap ? (
-            <code>{data().value}</code>
-          ) : (
-            <pre>{data().value}</pre>
-            // <SolidMarkdown children={data().value} />
-          )}
-        </Tabs.Content>
+        <Show when={props.block.checks["show preview"]}>
+          <Tabs.Content class="tabs__content" value="preview">
+            <SolidMarkdown children={data().value} />
+          </Tabs.Content>
+        </Show>
         <Tabs.Content class="tabs__content" value="code">
           <AvailableVarsEditorWrapper prefix="data" vars={dataGlobalVars()}>
             <Editor onDocChange={props.setCode} code={props.block.code} />
           </AvailableVarsEditorWrapper>
+        </Tabs.Content>
+        <Tabs.Content class="tabs__content" value="actual">
+          {props.block.checks.wrap ? (
+            <code>{data().value}</code>
+          ) : (
+            <pre>{data().value}</pre>
+          )}
         </Tabs.Content>
       </Tabs>
       {props.children}
@@ -533,7 +546,7 @@ const Blocks = (props: {
           props.setBlocks([
             ...props.blocks()!,
             {
-              checks: { wrap: true },
+              checks: { wrap: true, "show preview": true },
               code: `let title;
 let value;
 
@@ -563,6 +576,8 @@ return {
                 config={props.configS()}
                 data={props.resources()}
                 remove={() => {
+                  if (!window.confirm("Do you really want to delete this?"))
+                    return;
                   props.setBlocks(props.blocks()!.filter((a, i) => i !== idx));
                 }}
                 removeCheck={(check) => {
