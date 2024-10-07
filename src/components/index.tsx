@@ -162,14 +162,21 @@ const App: Component = () => {
           <h1>commit messages</h1>
         </header>
 
-        <Accordion collapsible defaultValue={["Configs"]} class="p-2">
+        <Accordion
+          collapsible
+          defaultValue={["Configs"]}
+          class="p-2 rounded border-slate-400 border"
+        >
           <Accordion.Item value={"Secrets"}>
-            <Accordion.Header class="accordion__item-header">
-              <Accordion.Trigger class="accordion__item-trigger">
+            <Accordion.Header class="accordion__item-header bg-slate-100">
+              <Accordion.Trigger class="accordion__item-trigger ">
                 Secrets
+                <span class="text-xs text-slate-600">
+                  Variables to use when fetching data
+                </span>
               </Accordion.Trigger>
             </Accordion.Header>
-            <Accordion.Content class="accordion__item-content w-full p-2 bg-slate-100">
+            <Accordion.Content class="accordion__item-content w-full p-2 ">
               <Secrets
                 addSecretS={addSecretS}
                 setAddSecretS={setAddSecretS}
@@ -181,12 +188,15 @@ const App: Component = () => {
           </Accordion.Item>
 
           <Accordion.Item value={"Configs"}>
-            <Accordion.Header class="accordion__item-header">
+            <Accordion.Header class="accordion__item-header bg-slate-100">
               <Accordion.Trigger class="accordion__item-trigger">
                 Config
+                <span class="text-xs text-slate-600">
+                  Variables for fetching data and in blocks
+                </span>
               </Accordion.Trigger>
             </Accordion.Header>
-            <Accordion.Content class="accordion__item-content w-full p-2 bg-slate-100">
+            <Accordion.Content class="accordion__item-content w-full p-2 ">
               <Configs
                 addConfigS={addConfigS}
                 setAddConfigS={setAddConfigS}
@@ -198,12 +208,15 @@ const App: Component = () => {
           </Accordion.Item>
 
           <Accordion.Item value={"fetch"}>
-            <Accordion.Header class="accordion__item-header">
+            <Accordion.Header class="accordion__item-header bg-slate-100">
               <Accordion.Trigger class="accordion__item-trigger">
                 Fetch Data
+                <span class="text-xs text-slate-600">
+                  The code that runs on the server
+                </span>
               </Accordion.Trigger>
             </Accordion.Header>
-            <Accordion.Content class="accordion__item-content w-full p-2 bg-slate-100">
+            <Accordion.Content class="accordion__item-content w-full p-2 ">
               <AvailableVarsEditorWrapper
                 prefix="config"
                 vars={configGlobalVars()}
@@ -215,7 +228,10 @@ const App: Component = () => {
         </Accordion>
 
         <Section>
-          <h2>Blocks</h2>
+          <h2>
+            Blocks - Write code that uses fetched data and the config from above
+            to output custom text
+          </h2>
           <Blocks
             addBlock={addBlock}
             setAddBlock={setAddBlock}
@@ -317,6 +333,7 @@ const Block: ParentComponent<{
             addS={newCheck}
             setS={setNewCheck}
             setGlobalS={() => props.setChecks(newCheck(), true)}
+            placeholder="Add Check"
           />
         </div>
         <Button onClick={props.remove}> remove </Button>
@@ -364,6 +381,7 @@ const Add = (props: {
   setS: Setter<string>;
   setGlobalS: (s: string) => void;
   label?: string;
+  placeholder?: string;
 }) => {
   return (
     <div class=" flex gap-2 items-center ">
@@ -374,7 +392,10 @@ const Add = (props: {
           </TextField.Label>
         </Show>
         <div class="flex gap-2 items-center">
-          <TextField.Input class="text-field__input" />
+          <TextField.Input
+            placeholder={props.placeholder}
+            class="text-field__input"
+          />
           <Button
             class="rounded-full bg-slate-400 w-8 h-8"
             onClick={() => {
@@ -408,7 +429,7 @@ const Secrets = (props: {
             [s]: "",
           });
         }}
-        label="Add Secret"
+        placeholder="Add Secret"
       />
       <Accordion collapsible class="p-2">
         <Index each={props.secretsM()}>
@@ -480,7 +501,7 @@ const Configs = (props: {
             [s]: "",
           });
         }}
-        label="Add Config"
+        placeholder="Add Config"
       />
       <Index each={props.userConfigArrayM()}>
         {(asdf) => (
@@ -555,17 +576,17 @@ title = "${add}"
 try {
     value = "hello"
 } catch (e) {
-    console.log({ tryError: e})
+    console.log({ tryError: e })
 }
 
 return {
     title,
-    value: value
+    value
 }`,
             },
           ]);
         }}
-        label="Add Block"
+        placeholder="Add Block"
       />
       <Suspense>
         <div class="flex flex-col gap-4">

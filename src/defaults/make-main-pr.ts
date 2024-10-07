@@ -1,13 +1,13 @@
 let title;
 let value;
 
-title = "Make Main PR";
+title = "Make PR";
 
 try {
-  const ticketNumber = `CLOUDHUB-${config.ticketNumber}`;
-  const descHead = `"[${ticketNumber}](https://imdexdev.atlassian.net/browse/${ticketNumber}) ${config.ticketSummary}"`;
-  const desc = checks["should use body"]
-    ? config.body
+  const ticketNumber = `CLOUDHUB-${data.ticketNumber}`;
+  const descHead = `"[${ticketNumber}](https://imdexdev.atlassian.net/browse/${ticketNumber}) ${data.ticketSummary}"`;
+  const desc = data["should use body"]
+    ? data.body
         .split("|")
         .filter(Boolean)
         .map((x) => `"- ${x.trim()}"`)
@@ -15,18 +15,16 @@ try {
     : [
         `$(git log --cherry kb-${ticketNumber} ^main --pretty="%s" | ForEach-Object { "- $_" })`,
       ];
-  const footer = [" ", " ", `#${config.workItem}`]
-    .map((x) => `"${x}"`)
-    .join(" ");
+  const footer = [" ", " ", `#${data.workItem}`].map((x) => `"${x}"`).join(" ");
   value = [
     "az repos pr create",
-    checks["is draft"] ? "--draft" : "",
-    `--work-items "${config.workItem}"`,
+    data["is draft"] ? "--draft" : "",
+    `--work-items "${data.workItem}"`,
     '--output "table"',
     "--open", // open the browser
     `--source-branch "kb-${ticketNumber}"`,
     '--target-branch "main"',
-    `--title "main [${config.epic}] ${config.title
+    `--title "main [${data.epic}] ${data.title
       .replace("asdf", ticketNumber)
       .replace("arst", ticketNumber)}"`,
     `--description ${descHead} ${desc} ${footer}`,
@@ -39,5 +37,5 @@ try {
 
 return {
   title,
-  value: value,
+  value,
 };
