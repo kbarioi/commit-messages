@@ -1,16 +1,26 @@
 let title;
 let value;
+let preview;
 
-title = "Create Main Branch";
+title = "Create Branch";
 
 try {
-  const ticketNumber = `CLOUDHUB-${config.ticketNumber}`;
+  const sprintBranch = `feat/r${new Date().getFullYear()}-${data.sprint}`;
   const checkout = [
     `git checkout`,
-    checks["create new branch"] ? "-b" : "",
-    `kb-${ticketNumber}`,
-  ].join("");
-  value = [`git checkout main && git pull`, checkout, `git push`]
+    data["create new branch"] ? "-b" : "",
+    `sprint/kb-${data.ticketNumber}`,
+  ].join(" ");
+  const cherryPickAll = `git cherry-pick kb-${data.ticketNumber} ^main`;
+  const cherryPickLast = `git cherry-pick $(git log --cherry kb-${data.ticketNumber} ^main --pretty="%H" -n )                                  `;
+
+  value = [
+    `git checkout main && git pull`,
+    `git checkout ${sprintBranch} && git pull`,
+    checkout,
+    data["cherry-pick all"] ? cherryPickAll : cherryPickLast,
+    `git push`,
+  ]
     .filter(Boolean)
     .join("\n");
 } catch (e) {
@@ -19,5 +29,6 @@ try {
 
 return {
   title,
-  value: value,
+  value,
+  preview,
 };

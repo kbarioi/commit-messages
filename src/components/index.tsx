@@ -36,48 +36,11 @@ const Editor = clientOnly(async () => await import("../components/Editor"));
 
 type Block = { code: string; checks: { [k: string]: boolean } };
 
-// const fetchTicket = async (
-//   ticketNumber: string | undefined,
-//   username: string | undefined,
-//   apiKey: string | undefined
-// ) => {
-//   "use server";
-//   const headers = new Headers({
-//     authorization: `Basic ${btoa(`${username}:${apiKey}`)}`,
-//   });
-//   const response = await fetch(
-//     `https://imdexdev.atlassian.net/rest/api/3/search?fields=summary,fixVersions,parent,assignee,customfield_13129&jql=project = "CLOUDHUB" AND Key = "CLOUDHUB-${ticketNumber}"`,
-//     {
-//       method: "GET",
-//       headers,
-//     }
-//   );
-//   return response.json();
-// };
-
-// const fetchActiveSprint = async (
-//   boardId: string | undefined,
-//   username: string | undefined,
-//   apiKey: string | undefined
-// ) => {
-//   "use server";
-//   const headers = new Headers({
-//     authorization: `Basic ${btoa(`${username}:${apiKey}`)}`,
-//   });
-//   const response = await fetch(
-//     `https://imdexdev.atlassian.net/rest/agile/1.0/board/${boardId}/sprint?state=active`,
-//     {
-//       method: "GET",
-//       headers,
-//     }
-//   );
-//   return response.ok ? response.json() : response.text();
-// };
-
 const CODE = "cm-code";
 const BLOCKS = "cm-blocks";
 const USER_SECRETS = "cm-user-secrets";
-const USER_CONFIG = "cm-user-config";
+const FETCH_DATA = "cm-user-config";
+const BLOCK_DATA = "cm-block-data";
 
 function creatLocalStorage<T>(
   key: string,
@@ -100,55 +63,44 @@ const App: Component = () => {
   const secretsM = createMemo(() =>
     !!secretsS ? Object.entries(secretsS() || {}) : []
   );
-  const [addConfigS, setAddConfigS] = createSignal("");
-  const [configS, setConfigS] = creatLocalStorage<object>(USER_CONFIG, {});
-  const userConfigArrayM = createMemo(() => Object.entries(configS() || {}));
 
-  const configGlobalVars = createMemo(() => {
-    return [...Object.keys(secretsS() || {}), ...Object.keys(configS() || {})];
+  const [addFetchDataS, setAddFetchDataS] = createSignal("");
+  const [fetchDataS, setFetchDataS] = creatLocalStorage<object>(FETCH_DATA, {});
+  const fetchDataArrayM = createMemo(() => Object.entries(fetchDataS() || {}));
+  const fetchDataAndSecrets = createMemo(() => {
+    return [
+      ...Object.keys(secretsS() || {}),
+      ...Object.keys(fetchDataS() || {}),
+    ];
   });
+
+  const [addBlockDataS, setAddBlockDataS] = createSignal("");
+  const [blockDataS, setBlockDataS] = creatLocalStorage<object>(BLOCK_DATA, {});
+  const blockDataEntriesM = createMemo(() =>
+    !!blockDataS ? Object.entries(blockDataS() || {}) : []
+  );
+  const blockDataKeysM = createMemo(() =>
+    !!blockDataS ? Object.keys(blockDataS() || {}) : []
+  );
 
   const [code, setCode] = creatLocalStorage<string>(CODE, "");
 
   const scheduled = createScheduled((fn) => debounce(fn, 2500));
   type AllM = {
-    code: string | undefined;
-    secrets: object | undefined;
-    config: object | undefined;
+    code: string;
+    secrets: object;
+    config: object;
   };
-  const allM = createMemo<AllM>((p) => {
-    if (!p) return { code: code(), secrets: secretsS(), config: configS() };
+  const allFetchDataM = createMemo<AllM>((p) => {
+    if (!p) return { code: code(), secrets: secretsS(), config: fetchDataS() };
 
     const value = {
       code: code(),
       secrets: secretsS(),
-      config: configS(),
+      config: fetchDataS(),
     };
 
     return scheduled() ? value : p;
-  });
-
-  const [resources] = createResource(allM, async (props) => {
-    "use server";
-    try {
-      return await new Function(
-        `{ return async function(config){ ${props.code} } }`
-      )
-        .call(null)
-        .call(null, Object.assign({}, props.secrets, props.config));
-    } catch (fetchError) {
-      console.log({ fetchError });
-    }
-  });
-  createEffect(() => console.log({ resources: resources() }));
-
-  const dataGlobalVars = createMemo(() => {
-    return [
-      ...new Set([
-        ...Object.keys(resources() || {}),
-        ...Object.keys(configS() || {}),
-      ]),
-    ];
   });
 
   const [blocks, setBlocks] = creatLocalStorage<Block[]>(BLOCKS, []);
@@ -164,7 +116,7 @@ const App: Component = () => {
 
         <Accordion
           collapsible
-          defaultValue={["Configs"]}
+          defaultValue={["Block"]}
           class="p-2 rounded border-slate-400 border"
         >
           <Accordion.Item value={"Secrets"}>
@@ -190,7 +142,7 @@ const App: Component = () => {
           <Accordion.Item value={"Configs"}>
             <Accordion.Header class="accordion__item-header bg-slate-100">
               <Accordion.Trigger class="accordion__item-trigger">
-                Config
+                Fetch Data
                 <span class="text-xs text-slate-600">
                   Variables for fetching data and in blocks
                 </span>
@@ -198,11 +150,11 @@ const App: Component = () => {
             </Accordion.Header>
             <Accordion.Content class="accordion__item-content w-full p-2 ">
               <Configs
-                addConfigS={addConfigS}
-                setAddConfigS={setAddConfigS}
-                configS={configS}
-                setConfigS={setConfigS}
-                userConfigArrayM={userConfigArrayM}
+                addConfigS={addFetchDataS}
+                setAddConfigS={setAddFetchDataS}
+                configS={fetchDataS}
+                setConfigS={setFetchDataS}
+                userConfigArrayM={fetchDataArrayM}
               />
             </Accordion.Content>
           </Accordion.Item>
@@ -210,7 +162,7 @@ const App: Component = () => {
           <Accordion.Item value={"fetch"}>
             <Accordion.Header class="accordion__item-header bg-slate-100">
               <Accordion.Trigger class="accordion__item-trigger">
-                Fetch Data
+                Fetch Code
                 <span class="text-xs text-slate-600">
                   The code that runs on the server
                 </span>
@@ -219,10 +171,30 @@ const App: Component = () => {
             <Accordion.Content class="accordion__item-content w-full p-2 ">
               <AvailableVarsEditorWrapper
                 prefix="config"
-                vars={configGlobalVars()}
+                vars={fetchDataAndSecrets()}
               >
                 <Editor onDocChange={setCode} code={code()} />
               </AvailableVarsEditorWrapper>
+            </Accordion.Content>
+          </Accordion.Item>
+
+          <Accordion.Item value={"Block"}>
+            <Accordion.Header class="accordion__item-header bg-slate-100">
+              <Accordion.Trigger class="accordion__item-trigger">
+                Block Data
+                <span class="text-xs text-slate-600">
+                  Variables to use in blocks (doesn't trigger a fetch)
+                </span>
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Content class="accordion__item-content w-full p-2 ">
+              <Configs
+                addConfigS={addBlockDataS}
+                setAddConfigS={setAddBlockDataS}
+                configS={blockDataS}
+                setConfigS={setBlockDataS}
+                userConfigArrayM={blockDataEntriesM}
+              />
             </Accordion.Content>
           </Accordion.Item>
         </Accordion>
@@ -237,9 +209,8 @@ const App: Component = () => {
             setAddBlock={setAddBlock}
             blocks={blocks}
             setBlocks={setBlocks}
-            configS={configS}
-            resources={resources}
-            dataGlobalVars={dataGlobalVars()}
+            allM={allFetchDataM}
+            blockDataS={blockDataS}
           />
         </Section>
       </div>
@@ -266,6 +237,7 @@ const Block: ParentComponent<{
   remove: () => void;
   block: Block;
   dataGlobalVars: string[];
+  blockDataS: Accessor<object>;
 }> = (props) => {
   const [newCheck, setNewCheck] = createSignal("");
   const checksArray = createMemo(() => Object.entries(props.block.checks));
@@ -276,14 +248,20 @@ const Block: ParentComponent<{
           .call(null)
           .call(
             null,
-            Object.assign({}, props.data, props.block.checks, props.config)
+            Object.assign(
+              {},
+              props.data,
+              props.block.checks,
+              props.config,
+              props.blockDataS()
+            )
           );
       } catch (blockError) {
         console.log({ blockError });
         return prev;
       }
     },
-    { title: "", value: "", checks: {} }
+    { title: "", value: "", preview: "" }
   );
   const dataGlobalVars = createMemo(() => [
     ...new Set([...props.dataGlobalVars, ...checksArray().map((a) => a[0])]),
@@ -310,7 +288,7 @@ const Block: ParentComponent<{
                       {check[0]}
                     </Checkbox.Label>
                   </Checkbox>
-                  <Show when={!["show preview", "wrap"].includes(check[0])}>
+                  <Show when={!["wrap"].includes(check[0])}>
                     <Button
                       class="rounded-full flex items-center justify-center bg-red-500 w-4 h-4"
                       onClick={() => {
@@ -346,16 +324,16 @@ const Block: ParentComponent<{
           <Tabs.Trigger class="tabs__trigger" value="code">
             Code
           </Tabs.Trigger>
-          <Show when={props.block.checks["show preview"]}>
+          <Show when={!!data().preview}>
             <Tabs.Trigger class="tabs__trigger" value="preview">
               Preview
             </Tabs.Trigger>
           </Show>
           <Tabs.Indicator class="tabs__indicator" />
         </Tabs.List>
-        <Show when={props.block.checks["show preview"]}>
+        <Show when={!!data().preview}>
           <Tabs.Content class="tabs__content" value="preview">
-            <SolidMarkdown children={data().value} />
+            <SolidMarkdown children={data().preview} />
           </Tabs.Content>
         </Show>
         <Tabs.Content class="tabs__content" value="code">
@@ -554,10 +532,32 @@ const Blocks = (props: {
   setAddBlock: Setter<string>;
   blocks: Accessor<Block[] | undefined>;
   setBlocks: Setter<Block[]>;
-  configS: any;
-  resources: any;
-  dataGlobalVars: string[];
+  allM: Accessor<{ code: string; secrets: object; config: object }>;
+  blockDataS: Accessor<object>;
 }) => {
+  const [resources] = createResource(props.allM, async (x) => {
+    "use server";
+    try {
+      return await new Function(
+        `{ return async function(config){ ${x.code} } }`
+      )
+        .call(null)
+        .call(null, Object.assign({}, x.secrets, x.config));
+    } catch (fetchError) {
+      return { fetchError };
+    }
+  });
+  createEffect(() => console.log({ resources: resources() }));
+
+  const dataGlobalVars = createMemo(() => {
+    return [
+      ...new Set([
+        ...Object.keys(resources() || {}),
+        ...Object.keys(props.allM().config || {}),
+        ...Object.keys(props.blockDataS()),
+      ]),
+    ];
+  });
   return (
     <>
       <Add
@@ -567,21 +567,29 @@ const Blocks = (props: {
           props.setBlocks([
             ...props.blocks()!,
             {
-              checks: { wrap: true, "show preview": true },
+              checks: { wrap: true },
               code: `let title;
 let value;
+let preview;
 
 title = "${add}"
 
 try {
     value = "hello"
 } catch (e) {
-    console.log({ tryError: e })
+    console.log({ valueError: e })
+}
+    
+try {
+    preview = "hello"
+} catch (e) {
+    console.log({ previewError: e })
 }
 
 return {
     title,
-    value
+    value,
+    preview
 }`,
             },
           ]);
@@ -593,9 +601,10 @@ return {
           <Index each={props.blocks()}>
             {(a, idx) => (
               <Block
-                dataGlobalVars={props.dataGlobalVars}
-                config={props.configS()}
-                data={props.resources()}
+                dataGlobalVars={dataGlobalVars()}
+                config={props.allM().config}
+                blockDataS={props.blockDataS}
+                data={resources()}
                 remove={() => {
                   if (!window.confirm("Do you really want to delete this?"))
                     return;
