@@ -4,22 +4,22 @@ let value;
 title = "Commit Message";
 
 try {
-  const ticketNumber = `CLOUDHUB-${config.ticketNumber}`;
-  const title = `${config.title
+  const ticketNumber = `CLOUDHUB-${data.ticketNumber}`;
+  const title = `${data.title
     .replace("asdf", `${ticketNumber}`)
     .replace("arst", `${ticketNumber}`)}`;
-  const body = checks["should use body"]
-    ? config.body
+  const body = data["should use body"]
+    ? data.body
         .split("|")
         .filter(Boolean)
         .map((x) => x.trim())
         .join("\n")
     : [
-        `$(git log --cherry kb-CLOUDHUB-${config.ticketNumber} ^main --pretty="%s" | ForEach-Object { "- $_" })`,
+        `$(git log --cherry kb-CLOUDHUB-${data.ticketNumber} ^main --pretty="%s" | ForEach-Object { "- $_" })`,
       ];
   const footer = [
     " ",
-    `#${config.workItem} [${ticketNumber}](https://imdexdev.atlassian.net/browse/${ticketNumber})`,
+    `#${data.workItem} [${ticketNumber}](https://imdexdev.atlassian.net/browse/${ticketNumber})`,
   ];
   value = [title].concat(body, footer).join("\n\n");
 } catch (e) {
@@ -28,5 +28,5 @@ try {
 
 return {
   title,
-  value: value,
+  value,
 };

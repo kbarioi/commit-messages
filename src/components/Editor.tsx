@@ -1,39 +1,42 @@
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
+import {editor} from "monaco-editor/esm/vs/editor/editor.api";
 import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
+
+const {create} = editor;
 
 const Editor = (props) => {
   let parent!: HTMLDivElement;
-  const [editor, setEditor] =
-    createSignal<monaco.editor.IStandaloneCodeEditor>();
+  const [e, setEditor] =
+    createSignal<editor.IStandaloneCodeEditor>();
   onMount(() => {
     setEditor(
-      monaco.editor.create(parent, {
+      create(parent, {
         language: "typescript",
         value: props.code,
       })
     );
+    
 
-    createEffect(() => {
-      editor()?.updateOptions({ readOnly: !!props.disabled });
-    });
+    // createEffect(() => {
+    //   editor()?.updateOptions({ readOnly: !!props.disabled });
+    // });
 
-    if (props.linter) {
-      editor()?.addAction({
-        id: "eslint.executeAutofix",
-        label: "Fix all auto-fixable problems",
-        contextMenuGroupId: "1_modification",
-        contextMenuOrder: 3.5,
-        run: (ed) => {
-          const code = ed.getValue();
-          if (code) {
-            props.linter?.postMessage({
-              event: "FIX",
-              code,
-            });
-          }
-        },
-      });
-    }
+    // if (props.linter) {
+    //   editor()?.addAction({
+    //     id: "eslint.executeAutofix",
+    //     label: "Fix all auto-fixable problems",
+    //     contextMenuGroupId: "1_modification",
+    //     contextMenuOrder: 3.5,
+    //     run: (ed) => {
+    //       const code = ed.getValue();
+    //       if (code) {
+    //         props.linter?.postMessage({
+    //           event: "FIX",
+    //           code,
+    //         });
+    //       }
+    //     },
+    //   });
+    // }
 
     //   editor.addCommand(KeyMod.CtrlCmd | KeyCode.KeyS, () => {
     //     // auto-format
@@ -43,22 +46,22 @@ const Editor = (props) => {
     //     editor.focus();
     //   });
 
-    editor()?.onDidChangeModelContent(() => {
-      const code = editor()?.getValue();
+    e()?.onDidChangeModelContent(() => {
+      const code = e()?.getValue();
       props.onDocChange?.(code);
       // runLinter(code);
     });
   });
-  onCleanup(() => editor()?.dispose());
+  onCleanup(() => e()?.dispose());
 
-  //   createEffect(() => {
-  //     monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-  //       noSemanticValidation: !props.displayErrors,
-  //       noSyntaxValidation: !props.displayErrors,
-  //     });
+  // createEffect(() => {
+  //   monaco.languages.typescript?.typescriptDefaults?.setDiagnosticsOptions({
+  //     noSemanticValidation: !props.displayErrors,
+  //     noSyntaxValidation: !props.displayErrors,
   //   });
+  // });
 
-  return <div class="min-h-0 min-w-0 flex-1 w-full h-96 p-0" ref={parent} />;
+  return <div class="min-h-0 min-w-0 flex-1 w-full h-full p-0" ref={parent} />;
 };
 
 export default Editor;
